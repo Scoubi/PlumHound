@@ -17,6 +17,8 @@ import csv
 from neo4j import GraphDatabase
 from tabulate import tabulate
 from datetime import date
+import runpy
+from BlueHound import *
 
 
 def CheckPython():
@@ -30,13 +32,21 @@ parser = argparse.ArgumentParser(description="BloodHound Wrapper for Blue/Purple
 pgroupc = parser.add_argument_group('DATABASE')
 pgroupc.add_argument("-s", "--server", type=str, help="Neo4J Server", default="bolt://localhost:7687")
 pgroupc.add_argument("-u", "--username", default="neo4j", type=str, help="Neo4J Database Useranme")
-pgroupc.add_argument("-p", "--password", default="neo4j1", type=str, help="Neo4J Database Password")
+pgroupc.add_argument("-p", "--password", default="neo4jj", type=str, help="Neo4J Database Password")
 pgroupc.add_argument("--UseEnc", default=False, dest="UseEnc", help="Use encryption when connecting.", action='store_true')
 
 pgroupx = parser.add_mutually_exclusive_group(required="True")
 pgroupx.add_argument("--easy", help="Test Database Connection, Returns Domain Users to stdout", action='store_true')
 pgroupx.add_argument("-x", "--TaskFile", dest="TaskFile", type=str, help="Specify a PlumHound TaskList File")
 pgroupx.add_argument("-c," "--QuerySingle", dest="querysingle", type=str, help="Specify a Single cypher Query")
+pgroupx.add_argument("-ap," "--AnalyzePath", dest="AnalyzePath", nargs='+', default="User", type=str, help="Analyze 'Attack Paths' between two nodes and find which path needs to be remediated to brake the path.")
+
+#parser.add_argument
+#subparsers = parser.add_subparsers(help='sub-command help')
+#parser_ap = subparsers.add_subparsers("-ap", help="Analyze Path and blabla")
+#parser_ap.add_argument("-sn", type=str, help="Starting Node. Must be between `\"` if there's a space. ex: \"DOMAIN ADMINS@TEST.COM\"")
+#parser_ap.add_argument("-en", type=str, help="Ending Node. Must be between `\"` if there's a space. ex: \"DOMAIN ADMINS@TEST.COM\"")
+
 
 pgroupo = parser.add_argument_group('OUTPUT', "Output Options (For single cypher queries only. --These options are ignored when -x or --easy is specified.")
 pgroupo.add_argument("-t", "--title", dest="title", default="Adhoc Query", type=str, help="Report Title for Single Query [HTML,CSV,Latex]")
@@ -109,6 +119,27 @@ def MakeTaskList():
         Loggy(500, "Task_str:  " + task_str)
         tasks = [task_str]
         return tasks
+
+    if args.AnalyzePath:
+        if args.AnalyzePath[0].upper() == "USER":
+            snode="User"
+            enode=""
+        elif args.AnalyzePath[0].upper() == "GROUP":
+            snode="Group"
+            enode=""
+        elif args.AnalyzePath[0].upper() == "COMPUTER":
+            snode="Computer"
+            enode=""
+        elif args.AnalyzePath[0].upper() == "OU":
+            snode="OU"
+            enode=""
+        elif args.AnalyzePath[0].upper() == "GPO":
+            snode="GPO"
+            enode=""
+        else:
+            snode=(args.AnalyzePath[0]).upper()
+            enode=(args.AnalyzePath[1]).upper()
+        bh_getpaths(snode,enode)
 
     if args.easy:
         Loggy(500, "Tasks Easy Query Specified.")
